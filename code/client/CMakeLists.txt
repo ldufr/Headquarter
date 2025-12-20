@@ -82,7 +82,7 @@ add_executable(
   ${CLIENT_SOURCES}
 )
 
-target_link_libraries(client PRIVATE common portal mbedcrypto)
+target_link_libraries(client PRIVATE common portal webgate mbedcrypto)
 target_compile_definitions(client PRIVATE HEADQUARTER_BUILD_EXPORTS)
 
 target_include_directories(

@@ -10,6 +10,7 @@
 #include "endian.h"
 
 #define UUID_NODE_LEN 6
+#define UUID_STRING_LENGTH (sizeof("AABBCCDD-AABB-AABB-AABB-AABBCCDDEEFF"))
 
 struct uuid {
     uint32_t time_low;

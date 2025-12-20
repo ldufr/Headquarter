@@ -180,6 +180,11 @@ int main(int argc, char **argv)
             secret = options.secret_2fa;
         }
 
+        struct webgate_login_result result2;
+        if (webgate_login(&result2, options.email, options.password, secret, GUILD_WARS_VERSION) != 2) {
+            return 1;
+        }
+
         struct portal_login_result result;
         int ret = portal_login(&result, options.email, options.password, secret);
         if (ret != 0) {
