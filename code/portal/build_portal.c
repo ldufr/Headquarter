@@ -50,6 +50,7 @@
 #include <mbedtls/sha256.h>
 
 #include <common/array.h>
+#include <common/basics.h>
 #include <common/endian.h>
 #include <common/macro.h>
 #include <common/process.h>

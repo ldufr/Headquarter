@@ -53,6 +53,7 @@ void HandleTitleTrackInfo(Connection *conn, size_t psize, Packet *packet)
         int32_t current_points;
         int32_t current_rank;
         int32_t points_needed_to_reach_current_rank;
+        int32_t title_mode_flags; // see TitleModeFlags
         int32_t next_title_rank_id;
         int32_t points_needed_to_reach_next_rank;
         int32_t max_rank;

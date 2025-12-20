@@ -57,12 +57,15 @@ add_library(
 
 if (MSVC)
   # We disable the following warnings:
+  # - C4054: 'type cast': from function pointer 'FARPROC' to data pointer 'void *'
   # - C4201: nonstandard extension used: nameless struct/union
   # - C4204: nonstandard extension used: non-constant aggregate initializer
   # - C4221: nonstandard extension used: '<var>': cannot be initialized using address of automatic variable
   # - C4267: conversion from 'size_t' to 'int', possible loss of data
   # - C4459: declaration of '<var>' hides global declaration
-  target_compile_options(client PRIVATE /WX /W4 /wd4201 /wd4204 /wd4221 /wd4267 /wd4459)
+  target_compile_options(common PRIVATE /WX /W4 /wd4054 /wd4201 /wd4204 /wd4221 /wd4267 /wd4459)
+else ()
+  target_compile_options(common PRIVATE -Wall -Werror -Wno-error=unused-function)
 endif()
 
 if (UNIX)

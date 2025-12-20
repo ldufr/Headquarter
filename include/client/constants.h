@@ -254,4 +254,10 @@ typedef enum Region {
     Region_DevRegion,
 } Region;
 
+typedef enum TitleModeFlags {
+    TitleModeFlags_None          = 0,
+    TitleModeFlags_DhuumCovenant = 1,
+    TitleModeFlags_ReforgedMode  = 2,
+} TitleModeFlags;
+
 #endif // CONSTANTS_H_INC

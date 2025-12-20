@@ -27,7 +27,7 @@ int close_dll(void *handle)
 
 int get_dll_symbol(void* handle, const char *symbol, void **out)
 {
-    if ((*out = GetProcAddress((HMODULE)handle, symbol)) != NULL) {
+    if ((*out = (void *) GetProcAddress((HMODULE)handle, symbol)) != NULL) {
         return 0;
     }
     fprintf(stderr, "GetProcAddress Error: %d findng symbol %s\n", GetLastError(), symbol);

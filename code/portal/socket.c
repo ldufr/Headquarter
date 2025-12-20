@@ -3,14 +3,6 @@
 #endif
 #define PORTAL_SOCKET_C
 
-static size_t min_size_t(size_t a, size_t b)
-{
-    if (a < b)
-        return a;
-    else
-        return b;
-}
-
 int send_full(SOCKET fd, const uint8_t *buffer, size_t buffer_len)
 {
     int ret;

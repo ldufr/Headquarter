@@ -45,6 +45,6 @@ if (MSVC)
   # - C4267: conversion from 'size_t' to 'int', possible loss of data
   target_compile_options(portal PRIVATE /W4 /WX /wd4115 /wd4201 /wd4204 /wd4267)
 else()
-  target_compile_options(portal PRIVATE -Wall -Werror)
+  target_compile_options(portal PRIVATE -Wall -Werror -Wno-error=unused-function)
 endif()
 

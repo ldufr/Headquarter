@@ -18,7 +18,7 @@
 
 # We specify a minimum requirement of 3.10.2, but for now use 3.5.1 here
 # until our infrastructure catches up.
-cmake_minimum_required(VERSION 3.5.1)
+cmake_minimum_required(VERSION 3.10)
 
 include(CMakePackageConfigHelpers)
 
@@ -216,6 +216,11 @@ if(CMAKE_BUILD_TYPE STREQUAL "Coverage")
         set(CMAKE_SHARED_LINKER_FLAGS "--coverage")
     endif(CMAKE_COMPILER_IS_GNU OR CMAKE_COMPILER_IS_CLANG)
 endif(CMAKE_BUILD_TYPE STREQUAL "Coverage")
+
+if (!MSVC)
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-error=documentation")
+set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -Wno-unused-but-set-variable")
+endif()
 
 if(LIB_INSTALL_DIR)
 else()

@@ -264,7 +264,7 @@ static int read_user_code(char *buffer, size_t size, size_t *ret)
     const char *newline;
     if ((newline = strchr(buffer, '\n')) == NULL)
         return 1;
-    *ret = strlen(buffer);
+    *ret = newline - buffer;
     return 0;
 }
 
