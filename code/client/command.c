@@ -27,6 +27,7 @@ void print_help(bool terminate)
             "    --authsrv                  Specify authserver IP to connect to\n"
             "    --2fa-secret <string>      Specify the OTP secret to automatically fill the 2fa value\n"
             "    --file-game-version <path> Provide a path to a file with the game version\n"
+            "    --use-portal               Uses Portal's protocol instead of Webgate's protocol\n"
             "\n"
             "    --status    <number>       Sets the login online status (0 = offline, 1 = online, 2 = busy, 3 = away)\n"
             "    --mapid                    Specify the map id you want to start in\n"
@@ -118,6 +119,8 @@ void parse_command_args(int argc, char **argv)
         } else if (!strcmp(arg, "--data-dir")) {
             check_for_more_arguments(argc, argv, i, 1);
             safe_strcpy(options.data_dir, ARRAY_SIZE(options.data_dir), argv[++i]);
+        } else if (!strcmp(arg, "--use-portal")) {
+            options.use_portal = true;
         } else if (!strcmp(arg, "--")) {
             ++i;
             g_Argv = &argv[i];

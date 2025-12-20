@@ -63,6 +63,7 @@
 #include <common/rbtree.h>
 
 #include <portal/login.h>
+#include <webgate/login.h>
 
 #include <client/Headquarter.h>
 

@@ -8,6 +8,7 @@ typedef struct CommandOptions {
     bool        print_version;
     bool        verbose;
     bool        trace;
+    bool        use_portal;
 
     const char *script;
     const char *auth_srv;

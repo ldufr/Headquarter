@@ -180,15 +180,26 @@ int main(int argc, char **argv)
             secret = options.secret_2fa;
         }
 
-        struct portal_login_result result;
-        int ret = portal_login(&result, options.email, options.password, secret);
-        if (ret != 0) {
-            fprintf(stderr, "Failed to connect to portal\n");
-            return 1;
-        }
+        if (options.use_portal) {
+            struct portal_login_result result;
+            int ret = portal_login(&result, options.email, options.password, secret);
+            if (ret != 0) {
+                fprintf(stderr, "Failed to connect to portal\n");
+                return 1;
+            }
 
-        client->portal_token = result.token;
-        client->portal_user_id = result.user_id;
+            client->portal_token = result.token;
+            client->portal_user_id = result.user_id;
+        } else {
+            struct webgate_login_result result;
+            if (webgate_login(&result, options.email, options.password, secret, GUILD_WARS_VERSION) != 0) {
+                fprintf(stderr, "Failed to connect to webgate\n");
+                return 1;
+            }
+
+            client->portal_token = result.token;
+            client->portal_user_id = result.user_id;
+        }
 
     #if defined(HEADQUARTER_CONSOLE)
         SetConsoleTitleA(options.charname);
