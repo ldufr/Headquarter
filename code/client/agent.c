@@ -441,7 +441,11 @@ void HandleAgentUpdateSpeedModifier(Connection *conn, size_t psize, Packet *pack
     UpdateSpeedModifier *pack = cast(UpdateSpeedModifier *)packet;
     assert(client && client->game_srv.secured);
 
-    World *world = get_world_or_abort(client);
+    World *world = get_world(client);
+    if (!world) {
+        LogError("AgentUpdateSpeedModifier received before the world %d spawned.", pack->agent_id);
+        return;
+    }
     Agent *agent = get_agent_safe(world, pack->agent_id);
     if (!agent) {
         LogError("AgentUpdateSpeedModifier received before the agent %d spawned.", pack->agent_id);
