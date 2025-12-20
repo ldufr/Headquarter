@@ -54,7 +54,7 @@ int thread_detach(struct thread *thread)
         log_error("pthread_detach failed: %d", retval);
         return retval;
     } else {
-        thread->handle = (unsigned long int)NULL;
+        thread->handle = 0;
         return 0;
     }
 }
@@ -67,7 +67,7 @@ int thread_join(struct thread *thread, int *retval)
         log_error("pthread_join failed: %d", res);
         return res;
     } else {
-        thread->handle = (unsigned long int)NULL;
+        thread->handle = 0;
         *retval = (int)((intptr_t)rv);
         return 0;
     }

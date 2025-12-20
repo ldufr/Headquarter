@@ -13,11 +13,21 @@
 
 static unsigned int     log_print_level;
 
+#ifdef __GNUC__
+#pragma GCC diagnostic push
+#pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 static thread_event_t   log_event;
 static thread_mutex_t   log_mutex;
 
 static size_t           log_wpos = 0;
 static char             log_buffer[LOG_BUFFER_SIZE];
+
+#ifdef __GNUC__
+#pragma GCC diagnostic pop
+#endif
+
 static FILE            *log_file;
 
 static const char *

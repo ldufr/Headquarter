@@ -20,6 +20,8 @@ typedef enum Type {
     TYPE_NESTED_STRUCT  = 14,
 } Type;
 
+_Static_assert(sizeof(Type) == 4, "sizeof(Type) == 4");
+
 typedef struct MsgField {
     Type        type;
     uint32_t    param;

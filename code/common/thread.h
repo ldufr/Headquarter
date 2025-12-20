@@ -4,6 +4,10 @@
 #include <time.h>
 #include <stdint.h>
 
+#ifndef _WIN32
+#include <pthread.h>
+#endif
+
 #include "align.h"
 #include "noreturn.h"
 
@@ -33,7 +37,7 @@ struct thread {
 #ifdef _WIN32
     void* handle;
 #else
-    unsigned long int handle;
+    pthread_t handle;  // Use pthread_t directly on Linux
 #endif
     thread_start_t start;
     void *param;
