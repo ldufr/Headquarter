@@ -43,10 +43,8 @@ def get_keys_from_scanner(scanner):
     return (pr, pm, pk)
 
 def write_keys_in_file(path, pr, pm, pk):
-    content = pr.to_bytes(4, byteorder='big')
-    content += pm.to_bytes(64, byteorder='big')
-    content += pk.to_bytes(64, byteorder='big')
-    open(path, 'wb').write(content)
+    content = f'root = {pr}\nserver_public = {pk}\nprime = {pm}'
+    open(path, 'w').write(content)
 
 def main(args):
     if args.pid:

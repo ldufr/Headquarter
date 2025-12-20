@@ -85,9 +85,6 @@ void parse_command_args(int argc, char **argv)
                 printf("Invalid -status\n");
                 print_help(true);
             }
-        } else if (!strcmp(arg, "-account")) {
-            check_for_more_arguments(argc, argv, i, 1);
-            safe_strcpy(options.account, ARRAY_SIZE(options.account), argv[++i]);
         } else if (!strcmp(arg, "-email")) {
             check_for_more_arguments(argc, argv, i, 1);
 

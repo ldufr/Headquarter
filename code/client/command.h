@@ -14,7 +14,6 @@ typedef struct CommandOptions {
     const char *auth_srv;
     const char *conf_file;
 
-    char        account[256];
     char        email[64];
     char        password[100];
     char        charname[20];
