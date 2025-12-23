@@ -13,23 +13,22 @@ void print_help(bool terminate)
             "Usage: [options] <script>\n"
 
             "    --version                  Print version and exist\n"
-            "    --config <config_file>     Use config_file as configuration file\n"
-            "    --log-file <path>          Specify the paht of the log file to write to\n"
-            "    --log-dir  <dir path>      Specify the paht of the directory in which to write\n"
             "    -h, --help                 Print this help\n"
+            "    -v, --verbose              Enable debug logs\n"
+            "    -vv, --trace               Enable trace logs\n"
             "\n"
-            "    --account   <string>       Name of the account to use\n"
+            "    --log-file <path>          Specify the path of the log file\n"
+            "    --log-dir  <dir path>      Specify the path of the logs directory\n"
+            "    --data-dir <dir path>      Specify the path of the data directory\n"
+            "\n"
             "    --email     <string>       Sets the client's email\n"
             "    --password  <string>       Enable auto-loging. use with -email and -charname\n"
             "    --character <string>       Specify which character to play on\n"
-            "    --status    <number>       Sets the login online status (0 = offline, 1 = online, 2 = busy, 3 = away)\n"
             "    --authsrv                  Specify authserver IP to connect to\n"
-            "   --2fa-secret <string>       Specify the OTP secret to automatically fill the 2fa value\n"
-            "\n"
-            "    -v, --verbose              Enable debug logs\n"
-            "    -vv, --trace               Enable trace logs\n"
+            "    --2fa-secret <string>      Specify the OTP secret to automatically fill the 2fa value\n"
             "    --file-game-version <path> Provide a path to a file with the game version\n"
             "\n"
+            "    --status    <number>       Sets the login online status (0 = offline, 1 = online, 2 = busy, 3 = away)\n"
             "    --mapid                    Specify the map id you want to start in\n"
             "    --maptype                  Specify the map type you want to start in\n"
             "\n"
@@ -116,6 +115,9 @@ void parse_command_args(int argc, char **argv)
         } else if (!strcmp(arg, "-file-game-version") || !strcmp(arg, "--file-game-version")) {
             check_for_more_arguments(argc, argv, i, 1);
             safe_strcpy(options.file_game_version, ARRAY_SIZE(options.file_game_version), argv[++i]);
+        } else if (!strcmp(arg, "--data-dir")) {
+            check_for_more_arguments(argc, argv, i, 1);
+            safe_strcpy(options.data_dir, ARRAY_SIZE(options.data_dir), argv[++i]);
         } else if (!strcmp(arg, "--")) {
             ++i;
             g_Argv = &argv[i];

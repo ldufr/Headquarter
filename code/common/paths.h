@@ -8,4 +8,6 @@ int get_dll_symbol(void* handle, const char *symbol, void **out);
 int get_executable_path(char* buffer, size_t length, size_t *ret);
 int get_executable_dir(char* buffer, size_t length, size_t *ret);
 
+int path_pop_dir(char *path, size_t length);
+
 #endif // COMMON_PATHS_H

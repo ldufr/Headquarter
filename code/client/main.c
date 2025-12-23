@@ -138,6 +138,9 @@ int main(int argc, char **argv)
 
     LogInfo("Initialization complete, running with client version %u", options.game_version);
 
+    // read the version data
+    
+
     uint32_t latest_client_file_id;
     if ((err = FsGetLatestExeFileId(&latest_client_file_id)) != 0) {
         log_warn("Couldn't get the lastest file id");

@@ -87,6 +87,7 @@ typedef struct World World;
 
 #include "bag.h"
 #include "chat.h"
+#include "data.h"
 #include "item.h"
 #include "agent.h"
 #include "guild.h"
@@ -118,6 +119,7 @@ typedef struct World World;
 #include "plugins.c"
 
 #include "chat.c"
+#include "data.c"
 #include "hero.c"
 #include "item.c"
 #include "agent.c"

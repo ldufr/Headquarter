@@ -16,6 +16,8 @@ set(
   client.h
   command.c
   command.h
+  data.c
+  data.h
   dialog.c
   dialog.h
   effect.c

@@ -278,7 +278,6 @@ bool IPv4ToAddr(const char *host, const char *port, struct sockaddr *sockaddr)
 bool read_dhm_key_file(DiffieHellmanCtx *dhm, FILE *file)
 {
     char line[256];
-
     while (fgets(line, sizeof(line), file) != NULL) {
         size_t key_start_idx;
         size_t key_end_idx;

@@ -11,7 +11,6 @@ typedef struct CommandOptions {
 
     const char *script;
     const char *auth_srv;
-    const char *conf_file;
 
     char        email[64];
     char        password[100];
@@ -19,6 +18,7 @@ typedef struct CommandOptions {
     char        secret_2fa[64];
     char        log_file[256];
     char        log_dir[256];
+    char        data_dir[256];
 
     uint32_t    game_version;
     char        file_game_version[256];
