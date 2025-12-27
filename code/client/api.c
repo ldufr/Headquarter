@@ -58,14 +58,6 @@ HQAPI void LogDebug(const char *fmt, ...)
     va_end(args);
 }
 
-HQAPI void LogCritical(const char *fmt, ...)
-{
-    va_list args;
-    va_start(args, fmt);
-    log_vmsg(LOG_CRITICAL, fmt, args);
-    va_end(args);
-}
-
 HQAPI void LogInfo(const char *fmt, ...)
 {
     va_list args;

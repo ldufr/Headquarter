@@ -59,7 +59,15 @@ union {                         \
 }
 
 typedef array(char)     array_char_t;
+typedef array(int)      array_int_t;
+typedef array(uint8_t)  array_uint8_t;
+typedef array(uint16_t) array_uint16_t;
 typedef array(uint32_t) array_uint32_t;
+typedef array(uint64_t) array_uint64_t;
+typedef array(int8_t)   array_int8_t;
+typedef array(int16_t)  array_int16_t;
+typedef array(int32_t)  array_int32_t;
+typedef array(int64_t)  array_int64_t;
 
 #define array_init(a)           _array_init(&(a)->base)
 #define array_reset(a)          _array_reset(&(a)->base);
@@ -77,7 +85,7 @@ typedef array(uint32_t) array_uint32_t;
 #define array_add(a, e)         (array_reserve(a, 1) && (((a)->data[(a)->size++] = (e)), 1))
 #define array_set(a, i, e)      (array_inside(a, i)  && (((a)->data[(i)] = (e)), 1))
 #define array_pop(a)            ((a)->data[(a)->size ? --(a)->size : 0])
-#define array_at(a, i)          ((a)->data[(i)])
+#define array_at(a, i)          ((a)->data[_array_at_chk(&(a)->base, (i), __FILE__, __LINE__)])
 
 #define array_front(a)          ((a)->data[0])
 #define array_back(a)           ((a)->data[(a)->size - 1])
@@ -120,5 +128,6 @@ int _array_copy(array_void_t *dest, array_void_t *src, const size_t elem_size);
 void * _array_push(array_void_t *a, size_t n, const size_t elem_size);
 void _array_remove_ordered(array_void_t *a, size_t index, const size_t elem_size);
 void _array_remove_range_ordered(array_void_t *a, size_t index, size_t count, const size_t elem_size);
+size_t _array_at_chk(array_void_t *a, size_t index, const char *file, int line);
 
 #endif // COMMON_ARRAY_H

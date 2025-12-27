@@ -31,27 +31,32 @@ void NetConn_Reset(Connection *conn)
 
     array_reset(&conn->in);
     array_reset(&conn->out);
-
-    // array_reset(&conn->srv_filter);
-    // array_reset(&conn->clt_filter);
-
     array_reset(&conn->handlers);
 }
 
 void NetConn_HardShutdown(Connection *conn)
 {
-    NetConn_Shutdown(conn);
+    thread_mutex_lock(&conn->mutex);
+    array_reset(&conn->in);
+    array_reset(&conn->out);
+
     shutdown(conn->fd.handle, SHUT_RDWR);
+    conn->flags |= NETCONN_SHUTDOWN;
+    thread_mutex_unlock(&conn->mutex);
 }
 
 void NetConn_Shutdown(Connection *conn)
 {
+    thread_mutex_lock(&conn->mutex);
+    NetConn_Send(conn);
+    shutdown(conn->fd.handle, SHUT_RDWR);
     conn->flags |= NETCONN_SHUTDOWN;
+    thread_mutex_unlock(&conn->mutex);
 }
 
 bool NetConn_IsShutdown(Connection *conn)
 {
-    if ((conn->fd.handle == 0) || (conn->fd.handle == INVALID_SOCKET)) {
+    if ((conn->flags & NETCONN_SHUTDOWN) != 0 || (conn->fd.handle == 0) || (conn->fd.handle == INVALID_SOCKET)) {
         return true;
     } else {
         return false;
@@ -102,7 +107,7 @@ typedef struct _FILE_CMSG_VERSION {
     uint8_t  h0000; // 1
     uint32_t h0001; // 0
     uint32_t h0005; // 0x1000F1
-    uint32_t h0009; // game
+    uint32_t h0009; // game (1 for Guild Wars)
     uint32_t h000D; // 0
     uint32_t h0011; // 0
 } FILE_CMSG_VERSION; // size 21 (0x15)
@@ -129,7 +134,6 @@ typedef union PacketBuffer {
 bool socket_would_block(int err);
 bool key_exchange_helper(Connection *conn, DiffieHellmanCtx *dhm);
 void arc4_hash(const uint8_t *key, uint8_t *digest);
-bool read_dhm_key_file(DiffieHellmanCtx *dhm, FILE* file);
 
 size_t get_static_size(MsgField *field);
 size_t get_element_size(MsgField *field);
@@ -142,8 +146,7 @@ int pack(const uint8_t *data, size_t data_size,
 
 mbedtls_entropy_context entropy;
 mbedtls_ctr_drbg_context ctr_drbg;
-DiffieHellmanCtx official_server_keys;
-DiffieHellmanCtx custom_server_keys;
+DiffieHellmanCtx server_keys;
 
 SockAddressArray AuthSrv_IPs;
 
@@ -156,9 +159,26 @@ void DiffieHellmanCtx_Reset(DiffieHellmanCtx *dhm)
     mbedtls_mpi_free(&dhm->primitive_root);
 }
 
-void Network_Init(void)
+int DiffieHellmanCtx_Make(DiffieHellmanCtx *dhm, GameData *data)
 {
     int err;
+    if ((err = mbedtls_mpi_read_string(&dhm->primitive_root, 10, data->network.root)) != 0) {
+        log_error("Couldn't parse the primitive root '%s', err: %d", data->network.root, err);
+        return 1;
+    }
+    if ((err = mbedtls_mpi_read_string(&dhm->server_public, 10, data->network.server_public)) != 0) {
+        log_error("Couldn't parse the server public key '%s', err: %d", data->network.server_public, err);
+        return 1;
+    }
+    if ((err = mbedtls_mpi_read_string(&dhm->prime_modulus, 10, data->network.prime)) != 0) {
+        log_error("Couldn't parse the prime modulus '%s', err: %d", data->network.prime, err);
+        return 1;
+    }
+    return 0;
+}
+
+void Network_Init(void)
+{
     if (Net_Initialized)
         return;
     
@@ -166,34 +186,15 @@ void Network_Init(void)
     WSADATA wsaData = {0};
     int wsa_error = WSAStartup(MAKEWORD(2, 2), &wsaData);
     if (wsa_error != NO_ERROR) {
-        printf("WSAError %d", wsa_error);
+        log_error("WSAError %d", wsa_error);
         return;
     }
 #endif
 
-    char file_path[320];
-    size_t length;
-    char dir_path[260];
-    if ((err = get_executable_dir(dir_path, sizeof(dir_path), &length)) != 0) {
-        abort();
+    if (DiffieHellmanCtx_Make(&server_keys, &g_GameData) != 0) {
+        log_error("Failed to create Diffie-Hellman params");
+        return;
     }
-
-    FILE* file = NULL;
-    bool file_read_ok = false;
-    for (int i = 0; i < 6 && !file_read_ok; i++) {
-        snprintf(file_path, sizeof(file_path), "%s/data/gw_%d.pub.txt", dir_path, options.game_version);
-        dir_path[length++] = '/';
-        dir_path[length++] = '.';
-        dir_path[length++] = '.';
-        dir_path[length] = 0;
-        file = fopen(file_path, "rb");
-        if (file) {
-            file_read_ok = read_dhm_key_file(&official_server_keys, file);
-            fclose(file);
-        }
-    }
-    assert(file_read_ok);
-    LogInfo("gw key found @ %s", file_path);
 
     const char secret[] = "Stradivarius";
     mbedtls_entropy_init(&entropy);
@@ -211,8 +212,7 @@ void Network_Shutdown(void)
         return;
 
     // Free stuff, see Init.
-    DiffieHellmanCtx_Reset(&official_server_keys);
-    DiffieHellmanCtx_Reset(&custom_server_keys);
+    DiffieHellmanCtx_Reset(&server_keys);
 
     mbedtls_entropy_free(&entropy);
     mbedtls_ctr_drbg_free(&ctr_drbg);
@@ -279,7 +279,6 @@ bool IPv4ToAddr(const char *host, const char *port, struct sockaddr *sockaddr)
 bool read_dhm_key_file(DiffieHellmanCtx *dhm, FILE *file)
 {
     char line[256];
-
     while (fgets(line, sizeof(line), file) != NULL) {
         size_t key_start_idx;
         size_t key_end_idx;
@@ -520,7 +519,7 @@ bool AuthSrv_Connect(Connection *conn)
         return false;
     }
 
-    if (!key_exchange_helper(conn, &official_server_keys)) {
+    if (!key_exchange_helper(conn, &server_keys)) {
         LogError("AuthSrv_Connect: key_exchange_helper() failed.");
         NetConn_Reset(conn);
         return false;        
@@ -589,7 +588,7 @@ bool GameSrv_Connect(Connection *conn,
         return false;
     }
 
-    if (!key_exchange_helper(conn, &official_server_keys)) {
+    if (!key_exchange_helper(conn, &server_keys)) {
         LogError("GameSrv_Connect: key_exchange_helper() failed.");
         NetConn_Reset(conn);
         return false;
@@ -658,7 +657,6 @@ size_t NetMsg_Unpack(const uint8_t *data, size_t data_size,
 {
     int retval = unpack(data, data_size, cast(uint8_t *)packet, pack_size, format->fields, format->count);
     if (retval < 0) {
-        LogError("NetMsg_Unpack: Failed to unpack() for message header %u", format->header);
         return 0;
     }
     return (size_t)retval;
@@ -666,14 +664,13 @@ size_t NetMsg_Unpack(const uint8_t *data, size_t data_size,
 
 void SendPacket(Connection *conn, size_t size, void *p)
 {
-    thread_mutex_lock(&conn->mutex);
-
-    if (conn->flags & NETCONN_REMOVE)
-        goto leave;
-
-    // @Robustness: This is undefined behaviors ! (Well not int practice)
     Packet *packet = cast(Packet *)p;
     Header header = packet->header & 0x7FFF;
+    log_trace("[%s] send header: %u", conn->name, header);
+
+    thread_mutex_lock(&conn->mutex);
+    if (conn->flags & NETCONN_REMOVE)
+        goto leave;
 
     assert(array_inside(&conn->client_msg_format, header));
 
@@ -681,7 +678,7 @@ void SendPacket(Connection *conn, size_t size, void *p)
     assert(header == format.header);
     assert(size == format.unpack_size);
 
-    ByteBuffer *out = &conn->out;
+    array_uint8_t *out = &conn->out;
     size_t availaible_length = out->capacity - out->size;
     if (availaible_length < sizeof(Header)) {
         LogError("Send buffer not big enough, flush socket stream", header);
@@ -712,7 +709,7 @@ void NetConn_Send(Connection *conn)
         return;
     }
 
-    ByteBuffer *out = &conn->out;
+    array_uint8_t *out = &conn->out;
     size_t size = out->size;
     uint8_t *buff = out->data;
     if (size == 0) {
@@ -743,7 +740,6 @@ void NetConn_Recv(Connection *conn)
     assert(conn && conn->secured);
 
     uint8_t buffer[5840];
-    thread_mutex_lock(&conn->mutex);
     size_t size = conn->in.capacity - conn->in.size;
     int iresult = recv(conn->fd.handle, cast(char *)buffer, (int)size, 0);
 
@@ -761,9 +757,6 @@ void NetConn_Recv(Connection *conn)
     uint8_t *dest = conn->in.data + conn->in.size;
     mbedtls_arc4_crypt(&conn->decrypt, cast(size_t)iresult, buffer, dest);
     conn->in.size += cast(size_t)iresult;
-
-    NetConn_DispatchPackets(conn);
-    thread_mutex_unlock(&conn->mutex);
 }
 
 void NetConn_DispatchPackets(Connection *conn)
@@ -797,6 +790,7 @@ void NetConn_DispatchPackets(Connection *conn)
             return;
         }
 
+        log_trace("[%s] received header: %u", conn->name, header);
         MsgHandler handler = array_at(&conn->handlers, header);
         if (handler)
             handler(conn, format.unpack_size, &buffer.packet);
@@ -818,11 +812,15 @@ void NetConn_Update(Connection *conn)
     if ((conn->fd.handle == 0) || (conn->fd.handle == INVALID_SOCKET))
         return;
 
-    NetConn_Send(conn);
-    NetConn_Recv(conn);
+    if ((conn->flags & NETCONN_SHUTDOWN) == 0) {
+        NetConn_Send(conn);
+        NetConn_Recv(conn);
+    }
+
+    NetConn_DispatchPackets(conn);
 
     if (conn->flags & NETCONN_SHUTDOWN) {
-        LogDebug("Shutdown connection '%s'", conn->name);
+        log_debug("Shutdown connection '%s'", conn->name);
 
         closesocket(conn->fd.handle);
         conn->fd.handle = INVALID_SOCKET;

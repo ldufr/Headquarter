@@ -16,6 +16,8 @@ set(
   client.h
   command.c
   command.h
+  data.c
+  data.h
   dialog.c
   dialog.h
   effect.c
@@ -26,6 +28,8 @@ set(
   event.h
   friend.c
   friend.h
+  filesrv.h
+  filesrv.c
   game.c
   game.h
   guild.c
@@ -78,7 +82,7 @@ add_executable(
   ${CLIENT_SOURCES}
 )
 
-target_link_libraries(client PRIVATE common portal mbedcrypto)
+target_link_libraries(client PRIVATE common portal webgate mbedcrypto)
 target_compile_definitions(client PRIVATE HEADQUARTER_BUILD_EXPORTS)
 
 target_include_directories(

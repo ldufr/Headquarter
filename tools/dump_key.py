@@ -22,6 +22,12 @@ def get_build_number(scanner):
     build_number, = scanner.read(addr + 1, '<I')
     return build_number
 
+def get_file_id(scanner):
+    function_call_rva = scanner.find(b'\x8B\xC8\x33\xDB\x39\x8D', -5)
+    function_rva = follow_call(scanner, function_call_rva)
+    file_id, = scanner.read(function_rva + 1, '<I')
+    return file_id
+
 def get_keys_from_scanner(scanner):
     addr = scanner.find(b'\x8B\x45\x08\xC7\x00\x88\x00\x00\x00\xB8', +0xA)
     keys, = scanner.read(addr)
@@ -59,14 +65,23 @@ def main(args):
         scanner = process.ProcessScanner(proc)
 
     pr, pm, pk = get_keys_from_scanner(scanner)
+    build = get_build_number(scanner)
+    file_id = get_file_id(scanner)
 
     if args.output:
         output = args.output
     else:
-        build = get_build_number(scanner)
         output = utils.get_path('data', f'gw_{build}.pub.txt')
 
-    content = f'root = {pr}\nserver_public = {pk}\nprime = {pm}'
+    content = [
+        f'root = {pr}',
+        f'server_public = {pk}',
+        f'prime = {pm}',
+        f'build = {build}',
+        f'file_id = {file_id}',
+    ]
+
+    content = '\n'.join(content)
     if output == '-':
         print(content)
     else:

@@ -45,6 +45,7 @@
 #include <mbedtls/ctr_drbg.h>
 
 #include <common/macro.h>
+#include <common/basics.h>
 #include <common/time.h>
 #include <common/assert.h>
 #include <common/paths.h>
@@ -62,6 +63,7 @@
 #include <common/rbtree.h>
 
 #include <portal/login.h>
+#include <webgate/login.h>
 
 #include <client/Headquarter.h>
 
@@ -78,6 +80,7 @@
 #include "opcodes.h"
 #include "packets.h"
 #include "network.h"
+#include "filesrv.h"
 
 // @Cleanup: Temporary
 typedef struct GwClient GwClient;
@@ -85,6 +88,7 @@ typedef struct World World;
 
 #include "bag.h"
 #include "chat.h"
+#include "data.h"
 #include "item.h"
 #include "agent.h"
 #include "guild.h"
@@ -116,6 +120,7 @@ typedef struct World World;
 #include "plugins.c"
 
 #include "chat.c"
+#include "data.c"
 #include "hero.c"
 #include "item.c"
 #include "agent.c"
@@ -138,6 +143,7 @@ typedef struct World World;
 
 #include "packets.c"
 #include "network.c"
+#include "filesrv.c"
 
 #include "arc4.c"
 #include "kstr.c"

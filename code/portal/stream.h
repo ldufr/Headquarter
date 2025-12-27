@@ -3,8 +3,6 @@
 #endif
 #define PORTAL_STREAM_H
 
-typedef array(uint8_t) array_uint8_t;
-
 void appendv(array_uint8_t *buffer, const char *fmt, va_list args);
 void appendf(array_uint8_t *buffer, const char *fmt, ...);
 

@@ -17,7 +17,7 @@ void init_client(GwClient *client)
     client->loading = true;
     client->connected = true;
 
-    client->current_character_idx = 0xffffffff;
+    client->current_character_idx = SIZE_MAX;
 
     array_init(&client->characters);
 
@@ -202,13 +202,9 @@ void PortalAccountConnect(GwClient *client, struct uuid *user_id, struct uuid *t
 void AccountLogin(GwClient *client)
 {
     assert(client->state == AwaitAccountConnect);
-    if (options.newauth) {
-        struct kstr charname;
-        kstr_init_from_kstr_hdr(&charname, &client->charname);
-        PortalAccountConnect(client, &client->portal_user_id, &client->portal_token, &charname);
-    } else {
-        LogError("Legacy connection is not working anymore, please use '-newauth'");
-    }
+    struct kstr charname;
+    kstr_init_from_kstr_hdr(&charname, &client->charname);
+    PortalAccountConnect(client, &client->portal_user_id, &client->portal_token, &charname);
     client->state = AwaitAccountConnection;
     // client->state.connection_pending = true;
 }
@@ -285,11 +281,11 @@ void ContinueChangeCharacter(GwClient *client, uint32_t error_code)
 
 bool ChangeCharacter(GwClient* client, struct kstr* name)
 {
-    Character* cc = GetCharacter(client, client->current_character_idx);
+    Character *cc = GetCharacter(client, client->current_character_idx);
     if (!(cc && name && kstr_hdr_compare_kstr(&cc->name, name) != 0))
         return false;
     for (size_t idx = 0; idx < client->characters.size; ++idx) {
-        Character* ch = &client->characters.data[idx];
+        Character *ch = &client->characters.data[idx];
         if (kstr_hdr_compare_kstr(&ch->name, name) == 0) {
             client->state = AwaitChangeCharacter;
             client->pending_character_idx = idx;
@@ -304,6 +300,7 @@ bool ChangeCharacter(GwClient* client, struct kstr* name)
     LogError("Failed to find character matching required name");
     return false;
 }
+
 void PlayCharacter(GwClient *client, struct kstr *name, PlayerStatus status)
 {
     assert(client->state == AwaitPlayCharacter);

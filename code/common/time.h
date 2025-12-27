@@ -20,6 +20,6 @@ void time_sleep_sec(unsigned int sec);
 uint64_t time_get_ms(void);
 
 long time_diff_nsec(struct timespec *end, struct timespec *beginning);
-bool time_localtime(const time_t* timep, struct tm* result);
+bool time_localtime(time_t timep, struct tm* result);
 uint64_t time_get_epoch_sec(void);
 #endif // COMMON_TIME_H

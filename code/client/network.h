@@ -26,7 +26,6 @@ typedef enum ConnectionFlags {
     NETCONN_RECONNECT   = 1 << 4,
 } ConnectionFlags;
 
-typedef array(uint8_t)          ByteBuffer;
 typedef array(MsgFormat)        MsgFormatArray;
 typedef array(Connection *)     ConnectionArray;
 typedef array(struct sockaddr)  SockAddressArray;
@@ -57,8 +56,8 @@ typedef struct Connection {
     msec_t                  latency;
 
     thread_mutex_t          mutex;
-    ByteBuffer              in;
-    ByteBuffer              out;
+    array_uint8_t           in;
+    array_uint8_t           out;
 
     bool                    secured;
     mbedtls_arc4_context    decrypt;

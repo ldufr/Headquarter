@@ -47,7 +47,7 @@ static void on_chat_message(Event *event, void *param)
 
     // The maximum number of characters for a character name is 20 in the game
     // so we right allign all sender name to the right at 20 characters.
-    LogInfo("%20.*s: '%.*s'\n", (int)sender_len, sender, (int)message_len, message);
+    LogInfo("%20.*s: '%.*s'", (int)sender_len, sender, (int)message_len, message);
 }
 
 DllExport bool PluginEntry(PluginObject *plugin)

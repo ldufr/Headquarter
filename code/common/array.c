@@ -177,3 +177,12 @@ _array_remove_range_ordered(array_void_t *a, size_t index, size_t count, const s
     }
     a->size -= count;
 }
+
+size_t _array_at_chk(array_void_t *a, size_t index, const char *file, int line)
+{
+    if (!(index < a->size)) {
+        log_error("Assertion failed: index (%zu) < a->size (%zu), file %s, line %d\n", index, a->size, file, line);
+        abort();
+    }
+    return index;
+}

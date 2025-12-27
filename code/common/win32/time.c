@@ -75,10 +75,10 @@ long time_diff_nsec(struct timespec *end, struct timespec *beginning)
     return (long)(diffsec * 1000000000) + diffnsec;
 }
 
-bool time_localtime(const time_t* timep, struct tm* result)
+bool time_localtime(time_t timep, struct tm* result)
 {
     errno_t err;
-    if ((err = localtime_s(result, timep)) != 0)
+    if ((err = localtime_s(result, &timep)) != 0)
         return false;
     return true;
 }

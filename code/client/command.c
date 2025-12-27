@@ -9,29 +9,28 @@ char **g_Argv;
 
 void print_help(bool terminate)
 {
-    printf( "Usage: [options] <script>\n"
+    fprintf(terminate ? stderr : stdout,
+            "Usage: [options] <script>\n"
 
-            "    --version                  print version and exist\n"
-            "    -c <config_file>           use config_file as configuration file\n"
-            "    -l <log_file>              Specify the name of the log file to write to\n"
-            "    -h, --help                 print this help\n"
-            "\n"
-            "    -account   <string>        Name of the account to use\n"
-            "    -email     <string>        Sets the client's email\n"
-            "    -password  <string>        Enable auto-loging. use with -email and -charname\n"
-            "    -character <string>        Specify which character to play on\n"
-            "    -status    <number>        Sets the login online status (0 = offline, 1 = online, 2 = busy, 3 = away)\n"
-            "    -authsrv                   Specify authserver IP to connect to\n"
-            "\n"
-            "    -oldauth                   The client will use Portal connection\n"
-            "\n"
-            "    -seed                      Specify the seed for pseudo random generation\n"
+            "    --version                  Print version and exist\n"
+            "    -h, --help                 Print this help\n"
             "    -v, --verbose              Enable debug logs\n"
             "    -vv, --trace               Enable trace logs\n"
-            "    -file-game-version <path>  Provide a path to a file with the game version\n"
             "\n"
-            "    -mapid                     Specify the map id you want to start in\n"
-            "    -maptype                   Specify the map type you want to start in\n"
+            "    --log-file <path>          Specify the path of the log file\n"
+            "    --log-dir  <dir path>      Specify the path of the logs directory\n"
+            "    --data-dir <dir path>      Specify the path of the data directory\n"
+            "\n"
+            "    --email     <string>       Sets the client's email\n"
+            "    --password  <string>       Enable auto-loging. use with -email and -charname\n"
+            "    --character <string>       Specify which character to play on\n"
+            "    --authsrv                  Specify authserver IP to connect to\n"
+            "    --2fa-secret <string>      Specify the OTP secret to automatically fill the 2fa value\n"
+            "    --file-game-version <path> Provide a path to a file with the game version\n"
+            "\n"
+            "    --status    <number>       Sets the login online status (0 = offline, 1 = online, 2 = busy, 3 = away)\n"
+            "    --mapid                    Specify the map id you want to start in\n"
+            "    --maptype                  Specify the map type you want to start in\n"
             "\n"
         );
 
@@ -41,7 +40,7 @@ void print_help(bool terminate)
 void check_for_more_arguments(int argc, char **argv, int i, int nargs)
 {
     if (argc <= i + nargs) {
-        printf("Not enough arguments after '%s'\n", argv[i]);
+        log_error("Not enough arguments after '%s'", argv[i]);
         print_help(true);
     }
 }
@@ -52,7 +51,6 @@ void parse_command_args(int argc, char **argv)
     // arguments following, we will print the help and exit. Maybe we just want
     // to returns with an error flag set.
 
-    options.newauth = true;
     options.online_status = 1;
 
     const char *ptr;
@@ -75,55 +73,62 @@ void parse_command_args(int argc, char **argv)
             options.verbose = true;
         } else if (!strcmp(arg, "-vv") || !strcmp(arg, "--trace")) {
             options.trace = true;
-        } else if (!strcmp(arg, "-authsrv")) {
+        } else if (!strcmp(arg, "-authsrv") || !strcmp(arg, "--authsrv")) {
             check_for_more_arguments(argc, argv, i, 1);
             options.auth_srv = argv[++i];
-        } else if (!strcmp(arg, "-status")) {
+        } else if (!strcmp(arg, "-status") || !strcmp(arg, "--status")) {
             check_for_more_arguments(argc, argv, i, 1);
             options.online_status = atoi(argv[++i]);
-            if (options.online_status < 0 || options.online_status > 3) {
-                printf("Invalid -status\n");
+            if (options.online_status < 0 || 3 < options.online_status) {
+                log_error("Invalid --status %d, must be between 0 and 3", options.online_status);
                 print_help(true);
             }
-        } else if (!strcmp(arg, "-email")) {
+        } else if (!strcmp(arg, "-email") || !strcmp(arg, "--email")) {
             check_for_more_arguments(argc, argv, i, 1);
 
             // @Remark: We need the email to be in lower cases, because
             // it is user to compute the static hash of the password.
             safe_strcpy(options.email, ARRAY_SIZE(options.email), argv[++i]);
             strlwc(options.email, ARRAY_SIZE(options.email));
-        } else if (!strcmp(arg, "-password")) {
+        } else if (!strcmp(arg, "-password") || !strcmp(arg, "--password")) {
             check_for_more_arguments(argc, argv, i, 1);
             safe_strcpy(options.password, ARRAY_SIZE(options.password), argv[++i]);
-        } else if (!strcmp(arg, "-2fa-secret")) {
+        } else if (!strcmp(arg, "-2fa-secret") || !strcmp(arg, "--2fa-secret")) {
             check_for_more_arguments(argc, argv, i, 1);
             safe_strcpy(options.secret_2fa, ARRAY_SIZE(options.secret_2fa), argv[++i]);
-        } else if (!strcmp(arg, "-character")) {
+        } else if (!strcmp(arg, "-character") || !strcmp(arg, "--character")) {
             check_for_more_arguments(argc, argv, i, 1);
             safe_strcpy(options.charname, ARRAY_SIZE(options.charname), argv[++i]);
-        } else if (!strcmp(arg, "-oldauth")) {
-            options.newauth = false;
-        } else if (!strcmp(arg, "-mapid")) {
+        } else if (!strcmp(arg, "-mapid") || !strcmp(arg, "--mapid")) {
             check_for_more_arguments(argc, argv, i, 1);
             options.opt_map_id.set = true;
             options.opt_map_id.map_id = atoi(argv[++i]);
-        } else if (!strcmp(arg, "-maptype")) {
+        } else if (!strcmp(arg, "-maptype") || !strcmp(arg, "--maptype")) {
             options.opt_map_type.set = true;
             options.opt_map_type.map_type = atoi(argv[++i]);
-        } else if (!strcmp(arg, "-l")) {
+        } else if (!strcmp(arg, "--log-file")) {
             check_for_more_arguments(argc, argv, i, 1);
-            safe_strcpy(options.log_file_name, ARRAY_SIZE(options.log_file_name), argv[++i]);
-        } else if (!strcmp(arg, "-file-game-version")) {
+            safe_strcpy(options.log_file, ARRAY_SIZE(options.log_file), argv[++i]);
+        } else if (!strcmp(arg, "--log-dir")) {
+            check_for_more_arguments(argc, argv, i, 1);
+            safe_strcpy(options.log_dir, ARRAY_SIZE(options.log_dir), argv[++i]);
+        } else if (!strcmp(arg, "-file-game-version") || !strcmp(arg, "--file-game-version")) {
             check_for_more_arguments(argc, argv, i, 1);
             safe_strcpy(options.file_game_version, ARRAY_SIZE(options.file_game_version), argv[++i]);
+        } else if (!strcmp(arg, "--data-dir")) {
+            check_for_more_arguments(argc, argv, i, 1);
+            safe_strcpy(options.data_dir, ARRAY_SIZE(options.data_dir), argv[++i]);
         } else if (!strcmp(arg, "--")) {
             ++i;
             g_Argv = &argv[i];
             g_Argc = argc - i;
             break;
+        } else if (arg[0] == '-') {
+            log_error("Unknown flag '%s'", arg);
+            print_help(true);
         } else {
             if (options.script) {
-                printf("You shouldn't specify more than one script to run, '%s' already specified\n", options.script);
+                log_error("You shouldn't specify more than one script to run, '%s' already specified", options.script);
                 print_help(true);
             }
             options.script = arg;
@@ -131,39 +136,59 @@ void parse_command_args(int argc, char **argv)
     }
 
     if (!options.email[0]) {
-        printf("You need to specify '-email'\n");
+        log_error("You need to specify '--email'");
         print_help(true);
     }
 
     if (!options.password[0]) {
-        printf("You need to specify '-password'\n");
+        log_error("You need to specify '--password'");
         print_help(true);
     }
 
     if (!options.charname[0]) {
-        printf("You need to specify '-charname'\n");
+        log_error("You need to specify '--charname'");
         print_help(true);
     }
 
     if (!options.script[0]) {
-        printf("You need to specify the script\n");
+        log_error("You need to specify the script");
         print_help(true);
     }
 
-    // Assign a default log file name if one wasn't provided
-    if (!options.log_file_name[0]) {
-        char timestamp[64];
-        time_t t = time(NULL);
-        struct tm ts;
-        // @Robustness: Deal with the error?
-        time_localtime(&t, &ts);
-		if (strftime(timestamp, sizeof(timestamp), "%Y-%m-%d_%H-%M-%S", &ts) <= 0) {
-			abort();
-		}
+    if (options.log_dir[0]) {
+        if (options.log_file[0]) {
+            log_warn("Ignoring '--log-dir' (value: '%s'), because '--log-file' is also specified", options.log_dir);
+        } else {
+            size_t dir_len = strlen(options.log_dir);
 
-		if (snprintf(options.log_file_name, sizeof(options.log_file_name), "%s_%d.txt", timestamp, getpid()) == -1) {
-			abort();
-		}
+            // Strip the last path seperator, we will add it manually.
+            if (options.log_dir[dir_len - 1] == '/' || options.log_dir[dir_len - 1] == '\\') {
+                options.log_dir[dir_len - 1] = 0;
+            }
+
+            struct tm ts;
+            if (!time_localtime(time(NULL), &ts)) {
+                abort();
+            }
+
+            int res = snprintf(
+                options.log_file,
+                sizeof(options.log_file),
+                "%s/%04d-%02d-%02d_%02d-%02d-%02d_%d.txt",
+                options.log_dir,
+                ts.tm_year + 1900,
+                ts.tm_mon + 1,
+                ts.tm_mday,
+                ts.tm_hour,
+                ts.tm_min,
+                ts.tm_sec,
+                getpid());
+
+            if (res < 0) {
+                log_error("Couldn't create the path of the log file");
+                abort();
+            }
+        }
     }
 
     if (!options.file_game_version[0]) {
@@ -171,14 +196,14 @@ void parse_command_args(int argc, char **argv)
     } else {
         FILE *file;
         if ((file = fopen(options.file_game_version, "rb")) == NULL) {
-            fprintf(stderr, "Failed to open '%s', err: %d\n", options.file_game_version, errno);
+            log_error("Failed to open '%s', err: %d", options.file_game_version, errno);
             abort();
         }
 
         char buffer[16];
         size_t size;
         if (sizeof(buffer) < (size = fread(buffer, 1, sizeof(buffer), file))) {
-            fprintf(stderr, "Couldn't read '%s', err: %d\n", options.file_game_version, errno);
+            log_error("Couldn't read '%s', err: %d", options.file_game_version, errno);
             abort();
         }
 
@@ -187,7 +212,7 @@ void parse_command_args(int argc, char **argv)
 
         int game_version = atoi(buffer);
         if (game_version <= 0) {
-            fprintf(stderr, "Invalid game version '%s'\n", buffer);
+            log_error("Invalid game version '%s'", buffer);
             abort();
         }
 
