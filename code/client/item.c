@@ -324,7 +324,7 @@ void HandleInventoryCreateBag(Connection *conn, size_t psize, Packet *packet)
     world->inventory.bags[pack->bag_model_id] = bag;
 }
 
-void RequestSellableItems(GwClient* client, TransactionType type, uint32_t item_type, uint32_t item_max_amount) {
+void HandleRequestSellableItems(GwClient* client, TransactionType type, uint32_t item_type, uint32_t item_amount) {
 
     World* world = get_world_or_abort(client);
 
@@ -353,13 +353,16 @@ void RequestSellableItems(GwClient* client, TransactionType type, uint32_t item_
         Item** item;
         array_foreach(item, &bag_ptr->items) {
             if (!*item) continue;
-            if ((*item)->quantity < item_max_amount)
+            if ((*item)->quantity < item_amount)
                 continue;
-            if (item_type == TraderWindowType_Dyes) {
-                if ((*item)->type != ItemType_Dye)
+            if (item_type == 10) {
+                // Dyes
+                if ((*item)->type != 10)
                     continue;
-            } else if (item_type == TraderWindowType_CommonMaterials) {
-                if ((*item)->type != ItemType_Material)
+            }
+            else if (item_type == 11) {
+                // Common materials
+                if ((*item)->type != 11)
                     continue;
                 bool is_common_material = false;
                 uint32_t* mod_struct;
@@ -373,8 +376,10 @@ void RequestSellableItems(GwClient* client, TransactionType type, uint32_t item_
                 }
                 if (!is_common_material)
                     continue;
-            } else if (item_type == TraderWindowType_RareMaterials) {
-                if ((*item)->type != ItemType_Material)
+            }
+            else if (item_type == 258) {
+                // Rare materials
+                if ((*item)->type != 11)
                     continue;
                 bool is_rare_material = false;
                 uint32_t* mod_struct;
@@ -388,8 +393,10 @@ void RequestSellableItems(GwClient* client, TransactionType type, uint32_t item_
                 }
                 if (!is_rare_material)
                     continue;
-            } else if (item_type == TraderWindowType_Runes) {
-                if ((*item)->type != ItemType_Rune)
+            }
+            else if (item_type == 257) {
+                // Runes/Insignias
+                if ((*item)->type != 8)
                     continue;
                 bool attaches_to_armor = false;
                 uint32_t* mod_struct;
@@ -401,10 +408,10 @@ void RequestSellableItems(GwClient* client, TransactionType type, uint32_t item_
                 }
                 if (!attaches_to_armor)
                     continue;
-            } else {
+            }
+            else {
                 continue; // Other types not supported
             }
-
             if (give.item_count == sizeof(give.item_ids) / sizeof(*give.item_ids)) {
                 world->tmp_merchant_pending_sell_preview++;
                 GameSrv_RequestQuote(client, type, &give, &recv, true);
@@ -420,22 +427,25 @@ void RequestSellableItems(GwClient* client, TransactionType type, uint32_t item_
     }
 }
 
-void FinishMerchantWindowCreation(GwClient* client)
+void HandleMerchantReady(GwClient* client)
 {
-    World *world = get_world_or_abort(client);
+    World* world = get_world_or_abort(client);
+
     world->tmp_merchant_pending_sell_preview = 0;
 
-    LogDebug("FinishMerchantWindowCreation called for %d items", world->tmp_merchant_items.size);
+    Item* item;
+    LogInfo("HandleMerchantReady called for %d items", world->tmp_merchant_items.size);
+    thread_mutex_lock(&client->mutex);
     for (size_t i = 0; i < world->tmp_merchant_items.size; i++) {
         array_add(&world->merchant_items, world->tmp_merchant_items.data[i]);
         if (array_inside(&world->tmp_merchant_prices, i)) {
-            Item *item = world->tmp_merchant_items.data[i];
+            item = world->tmp_merchant_items.data[i];
             // GW Bug: last sale price can be LOWER than the default item value!
             if (item->value < world->tmp_merchant_prices.data[i])
                 item->value = world->tmp_merchant_prices.data[i];
         }
     }
-
+    thread_mutex_unlock(&client->mutex);
     Event event;
     Event_Init(&event, EventType_DialogOpen);
     event.DialogOpen.sender_agent_id = world->merchant_agent_id;
@@ -467,7 +477,7 @@ void HandleWindowItemStreamEnd(Connection* conn, size_t psize, Packet* packet) {
         world->tmp_merchant_pending_sell_preview--;
     }
     if (world->tmp_merchant_pending_sell_preview == 0)
-        FinishMerchantWindowCreation(client);
+        HandleMerchantReady(client);
 }
 
 void HandleWindowMerchant(Connection* conn, size_t psize, Packet* packet) {
@@ -490,7 +500,7 @@ void HandleWindowMerchant(Connection* conn, size_t psize, Packet* packet) {
 
     if (pack->type == TransactionType_MerchantSell && !pack->item_type) {
         // Special case for merchant; only receives list of buyable items (i.e. no WindowPricesEnd packet; GW client figures out the sell tab)
-        FinishMerchantWindowCreation(client);
+        HandleMerchantReady(client);
     }
 }
 
@@ -512,11 +522,11 @@ void HandleWindowTrader(Connection* conn, size_t psize, Packet* packet) {
     WindowTrader* pack = cast(WindowTrader*)packet;
     assert(client && client->game_srv.secured);
 
-    RequestSellableItems(client, cast(TransactionType)pack->type, pack->item_type, pack->item_amount);
+    HandleRequestSellableItems(client, cast(TransactionType)pack->type, pack->item_type, pack->item_amount);
 
     if (pack->type == TransactionType_MerchantSell && !pack->item_type) {
         // Special case for merchant; only receives list of buyable items (i.e. no WindowPricesEnd packet; GW client figures out the sell tab)
-        FinishMerchantWindowCreation(client);
+        HandleMerchantReady(client);
     }
 }
 
@@ -591,7 +601,7 @@ void HandleWindowAddPrices(Connection* conn, size_t psize, Packet* packet)
 #pragma pack(push, 1)
     typedef struct {
         Header header;
-        uint32_t n_prices;
+        uint32_t  n_prices;
         int32_t prices[16];
     } AddPrices;
 #pragma pack(pop)

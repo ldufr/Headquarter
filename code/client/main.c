@@ -97,11 +97,6 @@ void main_loop(void)
 
 int main(int argc, char **argv)
 {
-    int err;
-
-    if (log_init() != 0)
-        return 1;
-
     parse_command_args(argc - 1, argv + 1);
 
     if (options.print_version) {
@@ -110,21 +105,19 @@ int main(int argc, char **argv)
     }
 
     if (argc < 2 || options.print_help) {
-        print_help(false);
-        return 0;
+        print_help(true);
     }
 
+    // @Enhancement: add arguments "-seed=23232"
     unsigned int seed = (unsigned int)time(NULL);
     srand(seed);
 
     signal(SIGINT, sighandler);
+    log_init(options.log_file_name);
     time_init();
     init_timers();
 
-    if (log_set_file_output(options.log_file) != 0) {
-        log_error("log_set_file_output failed");
-        return 1;
-    }
+    log_set_level(LOG_INFO);
 
     if (options.verbose)
         log_set_level(LOG_DEBUG);
@@ -136,24 +129,9 @@ int main(int argc, char **argv)
 #endif
     fps = 60;
 
-    // read the version data
-    if ((err = data_init(options.data_dir[0] != 0 ? options.data_dir : NULL)) != 0) {
-        log_error("data_init failed, %d", err);
-        return 1;
-    }
-
     Network_Init();
 
-    LogInfo("Initialization complete, running with client version %u", options.game_version);
-
-    uint32_t latest_client_file_id;
-    if ((err = FsGetLatestExeFileId(&latest_client_file_id)) != 0) {
-        log_error("Couldn't get the lastest file id");
-        return 1;
-    } else if (g_GameData.version.file_id != latest_client_file_id) {
-        log_warn("Latest game file id is %" PRIu32, ", got %" PRIu32, latest_client_file_id, g_GameData.version.file_id);
-        return 1;
-    }
+    LogInfo("Initialization complete, running with client version %u\n", options.game_version);
 
     client = malloc(sizeof(*client));
     init_client(client);
@@ -173,27 +151,28 @@ int main(int argc, char **argv)
         DECLARE_KSTR(password, 100);
         kstr_read_ascii(&password, options.password, ARRAY_SIZE(options.password));
 
-        const char *secret;
-        if (options.secret_2fa[0] == 0) {
-            secret = NULL;
+        if (options.newauth) {
+            const char *secret;
+            if (options.secret_2fa[0] == 0) {
+                secret = NULL;
+            } else {
+                secret = options.secret_2fa;
+            }
+
+            struct portal_login_result result;
+            int ret = portal_login(&result, options.email, options.password, secret);
+            if (ret != 0) {
+                fprintf(stderr, "Failed to connect to portal\n");
+                return 1;
+            }
+
+            client->portal_token = result.token;
+            client->portal_user_id = result.user_id;
         } else {
-            secret = options.secret_2fa;
+            struct kstr email;
+            kstr_init_from_kstr_hdr(&email, &client->email);
+            compute_pswd_hash(&email, &password, client->password);
         }
-
-        struct webgate_login_result result2;
-        if (webgate_login(&result2, options.email, options.password, secret, GUILD_WARS_VERSION) != 2) {
-            return 1;
-        }
-
-        struct portal_login_result result;
-        int ret = portal_login(&result, options.email, options.password, secret);
-        if (ret != 0) {
-            fprintf(stderr, "Failed to connect to portal\n");
-            return 1;
-        }
-
-        client->portal_token = result.token;
-        client->portal_user_id = result.user_id;
 
     #if defined(HEADQUARTER_CONSOLE)
         SetConsoleTitleA(options.charname);
@@ -204,7 +183,7 @@ int main(int argc, char **argv)
         LogError("Couldn't load the plugin '%s'", options.script);
         return 1;
     }
-    LogInfo("Plugin loaded, %s", options.script);
+    LogInfo("Plugin loaded, %s\n", options.script);
 
     main_loop();
 
@@ -214,7 +193,6 @@ int main(int argc, char **argv)
     }
 
     Network_Shutdown();
-    log_cleanup();
     printf("Quit cleanly !!\n");
 
     return 0;

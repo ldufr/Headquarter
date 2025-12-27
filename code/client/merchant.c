@@ -3,9 +3,9 @@
 #endif
 #define CORE_MERCHANT_C
 
-void GameSrv_TransactItems(GwClient *client, TransactionType type,
-    int gold_send, TransactionInfo *send_info,
-    int gold_recv, TransactionInfo *recv_info)
+void GameSrv_TransactItems(GwClient* client, TransactionType type,
+    int gold_send, TransactionInfo* send_info,
+    int gold_recv, TransactionInfo* recv_info)
 {
 #pragma pack(push, 1)
     typedef struct {
@@ -51,9 +51,9 @@ void GameSrv_TransactItems(GwClient *client, TransactionType type,
 }
 
 
-void GameSrv_BuyMaterials(GwClient *client, TransactionType type,
-    int gold_send, TransactionInfo *send_info,
-    int gold_recv, TransactionInfo *recv_info)
+void GameSrv_BuyMaterials(GwClient* client, TransactionType type,
+    int gold_send, TransactionInfo* send_info,
+    int gold_recv, TransactionInfo* recv_info)
 {
 #pragma pack(push, 1)
     typedef struct {
@@ -89,8 +89,8 @@ void GameSrv_BuyMaterials(GwClient *client, TransactionType type,
     SendPacket(&client->game_srv, sizeof(packet), &packet);
 }
 
-void GameSrv_RequestQuote(GwClient *client, TransactionType type,
-    QuoteInfo *send_info, QuoteInfo *recv_info, bool preview)
+void GameSrv_RequestQuote(GwClient* client, TransactionType type,
+    QuoteInfo* send_info, QuoteInfo* recv_info, bool preview)
 {
 #pragma pack(push, 1)
     typedef struct {
