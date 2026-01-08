@@ -86,6 +86,7 @@ def main(args):
         else:
             output = args.output
     else:
+        build = get_build_number(scanner)
         output = utils.get_path('data', f'gw_{build}.pub.txt')
 
     dump(scanner, output)
