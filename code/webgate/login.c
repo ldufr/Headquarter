@@ -133,6 +133,7 @@ int webgate_request(struct webgate_context *ctx, const char *path, array_uint8_t
     }
 
     if ((result = curl_easy_getinfo(ctx->handle, CURLINFO_RESPONSE_CODE, &resp->status_code)) != CURLE_OK) {
+        log_error("curl_easy_getinfo(CURLINFO_RESPONSE_CODE) failed %s", curl_easy_strerror(result));
         goto cleanup;
     }
 
@@ -159,6 +160,7 @@ int webgate_session_create(struct webgate_context *ctx)
 
     if (ctx->resp.status_code != 200) {
         log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
+        log_debug("Response to '%s' is:\n%.*s", path, (int) ctx->resp.content.size, ctx->resp.content.data);
         return 1;
     }
 
@@ -209,6 +211,7 @@ int webgate_user_login(struct webgate_context *ctx, const char *username, const 
 
     if (ctx->resp.status_code != 200) {
         log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
+        log_debug("Response to '%s' is:\n%.*s", path, (int) ctx->resp.content.size, ctx->resp.content.data);
         return 1;
     }
 
@@ -269,6 +272,7 @@ int webgate_list_game_accounts(struct webgate_context *ctx)
 
     if (ctx->resp.status_code != 200) {
         log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
+        log_debug("Response to '%s' is:\n%.*s", path, (int) ctx->resp.content.size, ctx->resp.content.data);
         return 1;
     }
 
@@ -344,6 +348,7 @@ int webgate_upgrade_login(struct webgate_context *ctx, const char *otp, size_t o
 
     if (ctx->resp.status_code != 200) {
         log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
+        log_debug("Response to '%s' is:\n%.*s", path, (int) ctx->resp.content.size, ctx->resp.content.data);
         return 1;
     }
 
@@ -386,6 +391,7 @@ int webgate_request_game_tokens(struct webgate_context *ctx)
 
     if (ctx->resp.status_code != 200) {
         log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
+        log_debug("Response to '%s' is:\n%.*s", path, (int) ctx->resp.content.size, ctx->resp.content.data);
         return 1;
     }
 
