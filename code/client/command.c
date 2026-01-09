@@ -153,7 +153,7 @@ void parse_command_args(int argc, char **argv)
         print_help(true);
     }
 
-    if (!options.script[0]) {
+    if (options.script == NULL || !options.script[0]) {
         log_error("You need to specify the script");
         print_help(true);
     }
