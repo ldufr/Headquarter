@@ -31,6 +31,7 @@
 #include <common/array.h>
 #include <common/time.h>
 #include <common/uuid.h>
+#include <common/log.h>
 
 #include "login.h"
 #include "totp.h"

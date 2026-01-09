@@ -32,7 +32,7 @@ int webgate_init(void)
 {
     CURLcode err;
     if ((err = curl_global_init(CURL_GLOBAL_DEFAULT)) != CURLE_OK) {
-        fprintf(stderr, "Failed to initialize curl, code: %d\n", err);
+        log_error("Failed to initialize curl, code: %d", err);
         return 1;
     }
     return 0;
@@ -72,14 +72,14 @@ int webgate_request(struct webgate_context *ctx, const char *path, array_uint8_t
     char auth[256];
     err = snprintf(auth, sizeof(auth), "Authorization: Arena %s", ctx->auth_token);
     if (err < 0 || sizeof(auth) <= err) {
-        fprintf(stderr, "Failed to create the 'Authorization' header\n");
+        log_error("Failed to create the 'Authorization' header");
         return 1;
     }
 
     char user_agent[256];
     err = snprintf(user_agent, sizeof(user_agent), "User-Agent: Gw/%" PRIu32 ".0 (Win32)", ctx->client_version);
     if (err < 0 || sizeof(user_agent) <= err) {
-        fprintf(stderr, "Failed to create the 'User-Agent' header\n");
+        log_error("Failed to create the 'User-Agent' header");
         return 1;
     }
 
@@ -99,36 +99,36 @@ int webgate_request(struct webgate_context *ctx, const char *path, array_uint8_t
     }
 
     if ((result = curl_easy_setopt(ctx->handle, CURLOPT_HTTPHEADER, headers)) != CURLE_OK) {
-        fprintf(stderr, "curl_easy_setopt(CURLOPT_HTTPHEADER) failed %s\n", curl_easy_strerror(result));
+        log_error("curl_easy_setopt(CURLOPT_HTTPHEADER) failed %s", curl_easy_strerror(result));
         goto cleanup;
     }
     if ((result = curl_easy_setopt(ctx->handle, CURLOPT_URL, url)) != CURLE_OK) {
-        fprintf(stderr, "curl_easy_setopt(CURLOPT_URL) failed %s\n", curl_easy_strerror(result));
+        log_error("curl_easy_setopt(CURLOPT_URL) failed %s", curl_easy_strerror(result));
         goto cleanup;
     }
     if ((result = curl_easy_setopt(ctx->handle, CURLOPT_WRITEDATA, resp)) != CURLE_OK) {
-        fprintf(stderr, "curl_easy_setopt(CURLOPT_WRITEDATA) failed %s\n", curl_easy_strerror(result));
+        log_error("curl_easy_setopt(CURLOPT_WRITEDATA) failed %s", curl_easy_strerror(result));
         goto cleanup;
     }
 
     if (post_data != NULL) {
         if ((size_t) LONG_MAX < post_data->size) {
-            fprintf(stderr, "Can't send more than %ld bytes, got %zu\n", LONG_MAX, post_data->size);
+            log_error("Can't send more than %ld bytes, got %zu", LONG_MAX, post_data->size);
             goto cleanup;
         }
         if ((result = curl_easy_setopt(ctx->handle, CURLOPT_POSTFIELDSIZE, (long) post_data->size)) != CURLE_OK) {
-            fprintf(stderr, "curl_easy_setopt(CURLOPT_POSTFIELDSIZE) failed %s\n", curl_easy_strerror(result));
+            log_error("curl_easy_setopt(CURLOPT_POSTFIELDSIZE) failed %s", curl_easy_strerror(result));
             goto cleanup;
         }
         if ((result = curl_easy_setopt(ctx->handle, CURLOPT_POSTFIELDS, post_data->data)) != CURLE_OK) {
-            fprintf(stderr, "curl_easy_setopt(CURLOPT_POSTFIELDS) failed %s\n", curl_easy_strerror(result));
+            log_error("curl_easy_setopt(CURLOPT_POSTFIELDS) failed %s", curl_easy_strerror(result));
             goto cleanup;
         }
     }
 
     array_clear(&resp->content);
     if ((result = curl_easy_perform(ctx->handle)) != CURLE_OK) {
-        fprintf(stderr, "curl_easy_perform failed %s\n", curl_easy_strerror(result));
+        log_error("curl_easy_perform failed %s", curl_easy_strerror(result));
         goto cleanup;
     }
 
@@ -158,7 +158,7 @@ int webgate_session_create(struct webgate_context *ctx)
     }
 
     if (ctx->resp.status_code != 200) {
-        fprintf(stderr, "Request to '%s' failed, http status: %ld\n", path, ctx->resp.status_code);
+        log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
         return 1;
     }
 
@@ -208,7 +208,7 @@ int webgate_user_login(struct webgate_context *ctx, const char *username, const 
     }
 
     if (ctx->resp.status_code != 200) {
-        fprintf(stderr, "Request to '%s' failed, http status: %ld\n", path, ctx->resp.status_code);
+        log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
         return 1;
     }
 
@@ -227,7 +227,7 @@ int webgate_user_login(struct webgate_context *ctx, const char *username, const 
         } else if (s_cmp(&auth_type, &sms) == 0) {
             err = WEBGATE_ERR_2FA_REQUIRE_SMS;
         } else {
-            fprintf(stderr, "Unknown AuthType: '%.*s'\n", (int) auth_type.len, auth_type.ptr);
+            log_error("Unknown AuthType: '%.*s'", (int) auth_type.len, auth_type.ptr);
             err = 1;
         }
         return err;
@@ -239,7 +239,7 @@ int webgate_user_login(struct webgate_context *ctx, const char *username, const 
     }
 
     if (!s_parse_uuid(&user_id, &ctx->user_id)) {
-        fprintf(stderr, "Couldn't print the user id '%.*s' as uuid\n", (int) user_id.len, user_id.ptr);
+        log_error("Couldn't print the user id '%.*s' as uuid", (int) user_id.len, user_id.ptr);
         return 1;
     }
 
@@ -268,7 +268,7 @@ int webgate_list_game_accounts(struct webgate_context *ctx)
     }
 
     if (ctx->resp.status_code != 200) {
-        fprintf(stderr, "Request to '%s' failed, http status: %ld\n", path, ctx->resp.status_code);
+        log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
         return 1;
     }
 
@@ -300,9 +300,8 @@ int webgate_list_game_accounts(struct webgate_context *ctx)
 
         if (s_cmp(&game_code, &GAME_CODE) == 0) {
             if (ARRAY_SIZE(ctx->alias) <= alias.len) {
-                fprintf(
-                    stderr,
-                    "Found alias '%.*s', but it's too large for the buffer. Maximum %zu, got %zu\n",
+                log_error(
+                    "Found alias '%.*s', but it's too large for the buffer. Maximum %zu, got %zu",
                     (int) alias.len, alias.ptr,
                     ARRAY_SIZE(ctx->alias),
                     alias.len
@@ -344,7 +343,7 @@ int webgate_upgrade_login(struct webgate_context *ctx, const char *otp, size_t o
     }
 
     if (ctx->resp.status_code != 200) {
-        fprintf(stderr, "Request to '%s' failed, http status: %ld\n", path, ctx->resp.status_code);
+        log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
         return 1;
     }
 
@@ -356,7 +355,7 @@ int webgate_upgrade_login(struct webgate_context *ctx, const char *otp, size_t o
     }
 
     if (!s_parse_uuid(&user_id, &ctx->user_id)) {
-        fprintf(stderr, "Couldn't print the user id '%.*s' as uuid\n", (int) user_id.len, user_id.ptr);
+        log_error("Couldn't print the user id '%.*s' as uuid", (int) user_id.len, user_id.ptr);
         return 1;
     }
 
@@ -386,7 +385,7 @@ int webgate_request_game_tokens(struct webgate_context *ctx)
     }
 
     if (ctx->resp.status_code != 200) {
-        fprintf(stderr, "Request to '%s' failed, http status: %ld\n", path, ctx->resp.status_code);
+        log_error("Request to '%s' failed, http status: %ld", path, ctx->resp.status_code);
         return 1;
     }
 
@@ -397,7 +396,7 @@ int webgate_request_game_tokens(struct webgate_context *ctx)
     }
 
     if (!s_parse_uuid(&token, &ctx->token)) {
-        fprintf(stderr, "Couldn't print the token '%.*s' as uuid\n", (int) token.len, token.ptr);
+        log_error("Couldn't print the token '%.*s' as uuid", (int) token.len, token.ptr);
         return 1;
     }
 
@@ -444,7 +443,7 @@ int webgate_login(
     }
 
     if ((err = webgate_session_create(&ctx)) != 0) {
-        fprintf(stderr, "Failed to create a webgate session, err: %d\n", err);
+        log_error("Failed to create a webgate session, err: %d", err);
         goto cleanup;
     }
 
@@ -452,13 +451,13 @@ int webgate_login(
         // This is not necessarily a unrecoverable error. We may need
         // to send a code, because of 2fa.
         if (err == WEBGATE_ERR_2FA_REQUIRE_TOTP) {
-            fprintf(stderr, "2fa requires TOTP code\n");
+            fprintf(stdout, "2fa requires TOTP code\n");
         } else if (err == WEBGATE_ERR_2FA_REQUIRE_EMAIL) {
-            fprintf(stderr, "2fa requires Email code\n");
+            fprintf(stdout, "2fa requires Email code\n");
         } else if (err == WEBGATE_ERR_2FA_REQUIRE_SMS) {
-            fprintf(stderr, "2fa requires SMS code\n");
+            fprintf(stdout, "2fa requires SMS code\n");
         } else {
-            fprintf(stderr, "Failed to do a webgate login, err: %d\n", err);
+            log_error("Failed to do a webgate login, err: %d", err);
             goto cleanup;
         }
 
@@ -468,12 +467,12 @@ int webgate_login(
         if (secrets != NULL && err == WEBGATE_ERR_2FA_REQUIRE_TOTP) {
             uint32_t code;
             if (!totp(secrets, 6, &code)) {
-                fprintf(stderr, "Failed to generate the 2fa code\n");
+                log_error("Failed to generate the 2fa code");
                 goto cleanup;
             }
 
             if ((err = snprintf(otp, sizeof(otp), "%06d", code)) <= 0) {
-                fprintf(stderr, "Failed to stringnify the 2fa code\n");
+                log_error("Failed to stringnify the 2fa code");
                 goto cleanup;
             }
 
@@ -491,12 +490,12 @@ int webgate_login(
     }
 
     if ((err = webgate_list_game_accounts(&ctx)) != 0) {
-        fprintf(stderr, "Failed to list the game accounts, err: %d\n", err);
+        log_error("Failed to list the game accounts, err: %d", err);
         goto cleanup;
     }
 
     if ((err = webgate_request_game_tokens(&ctx)) != 0) {
-        fprintf(stderr, "Failed to request the game tokens, err: %d\n", err);
+        log_error("Failed to request the game tokens, err: %d", err);
         goto cleanup;
     }
 
