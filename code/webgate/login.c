@@ -38,7 +38,7 @@ int webgate_init(void)
     return 0;
 }
 
-void webgate_cleanup()
+void webgate_cleanup(void)
 {
     curl_global_cleanup();
 }

@@ -8,6 +8,9 @@ struct webgate_login_result {
     struct uuid token;
 };
 
+int webgate_init(void);
+void webgate_cleanup(void);
+
 int webgate_login(
     struct webgate_login_result *result,
     const char *username,

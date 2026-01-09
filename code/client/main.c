@@ -192,18 +192,25 @@ int main(int argc, char **argv)
             struct portal_login_result result;
             int ret = portal_login(&result, options.email, options.password, secret);
             if (ret != 0) {
-                fprintf(stderr, "Failed to connect to portal\n");
+                log_error("Failed to connect to portal");
                 return 1;
             }
 
             client->portal_token = result.token;
             client->portal_user_id = result.user_id;
         } else {
-            struct webgate_login_result result;
-            if (webgate_login(&result, options.email, options.password, secret, GUILD_WARS_VERSION) != 0) {
-                fprintf(stderr, "Failed to connect to webgate\n");
+            if (webgate_init() != 0) {
+                log_error("webgate_init failed");
                 return 1;
             }
+
+            struct webgate_login_result result;
+            if (webgate_login(&result, options.email, options.password, secret, GUILD_WARS_VERSION) != 0) {
+                log_error("Failed to connect to webgate");
+                return 1;
+            }
+
+            webgate_cleanup();
 
             client->portal_token = result.token;
             client->portal_user_id = result.user_id;
