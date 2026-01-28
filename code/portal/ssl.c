@@ -70,6 +70,8 @@ const char* ssl_err_string(const int error_code)
         return "Bad Input Data";
     case ERR_SSL_BUFFER_TOO_SMALL:
         return "Buffer Too Small";
+    case ERR_SSL_IO_FAILURE:
+        return "I/O Failure";
     }
     return "Unknown Error";
 }
@@ -640,7 +642,7 @@ static int ssl_sts_connection_send_internal(
     be16enc(send_data + 3, (uint16_t)content_size);
 
     if ((ret = send_full(ssl->fd, send_data, send_size)) != 0) {
-        return ret;
+        return ERR_SSL_IO_FAILURE;
     }
 
     // Reset the vector to the size at start
@@ -817,8 +819,8 @@ int ssl_sts_connection_recv_internal(
         }
 
         if ((ret = recv_to_buffer(ssl->fd, &ssl->read)) != 0) {
-            fprintf(stderr, "Failed to recv data from network: %d\n", ret);
-            return ret;
+            fprintf(stderr, "Failed to recv data from network, errno: %d\n", ret);
+            return ERR_SSL_IO_FAILURE;
         }
     }
 
@@ -1714,7 +1716,8 @@ static int wait_for_server_step(int (*stepf)(struct ssl_sts_connection *ssl), st
             break;
 
         if ((ret = recv_to_buffer(ssl->fd, &ssl->read)) != 0) {
-            return ERR_SSL_UNEXPECTED_MESSAGE;
+            fprintf(stderr, "Failed to recv data from network, errno: %d\n", ret);
+            return ERR_SSL_IO_FAILURE;
         }
     }
 
@@ -1729,7 +1732,7 @@ static int send_client_step(int (*stepf)(struct ssl_sts_connection *ssl), struct
     if ((ret = stepf(ssl)) != 0)
         return ret;
     if ((ret = send_full(ssl->fd, ssl->write.data, ssl->write.size)) != 0)
-        return ret;
+        return ERR_SSL_IO_FAILURE;
     array_clear(&ssl->write);
     return 0;
 }

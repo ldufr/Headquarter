@@ -35,6 +35,7 @@
 # include <netinet/in.h>
 # include <netdb.h>
 # include <arpa/inet.h>
+# include <errno.h>
 # define SOCKET int
 # define closesocket close
 # define INVALID_SOCKET -1

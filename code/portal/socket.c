@@ -3,6 +3,15 @@
 #endif
 #define PORTAL_SOCKET_C
 
+int get_os_error(void)
+{
+#ifdef _WIN32
+    return WSAGetLastError();
+#else
+    return errno;
+#endif
+}
+
 int send_full(SOCKET fd, const uint8_t *buffer, size_t buffer_len)
 {
     int ret;
@@ -12,7 +21,7 @@ int send_full(SOCKET fd, const uint8_t *buffer, size_t buffer_len)
         const char *p = (const char *)buffer + written;
         int len = (int)min_size_t(INT_MAX, buffer_len - written);
         if ((ret = send(fd, p, len, 0)) <= 0)
-            return ret;
+            return get_os_error();
         written += (size_t)ret;
     }
 
@@ -30,7 +39,7 @@ int recv_to_buffer(SOCKET fd, array_uint8_t *buffer)
         size_t size = array_size(buffer) - BUFFER_SIZE;
         buffer->size = size;
         // array_resize(buffer, size);
-        return ret;
+        return get_os_error();
     }
 
     buffer->size = array_size(buffer) - (BUFFER_SIZE - (size_t)ret);

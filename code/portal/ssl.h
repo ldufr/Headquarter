@@ -9,6 +9,7 @@
 #define ERR_SSL_UNSUPPORTED_PROTOCOL   4
 #define ERR_SSL_BAD_INPUT_DATA         5
 #define ERR_SSL_BUFFER_TOO_SMALL       6
+#define ERR_SSL_IO_FAILURE             7
 
 enum ssl_sts_state {
     AWAIT_CLIENT_HELLO,
