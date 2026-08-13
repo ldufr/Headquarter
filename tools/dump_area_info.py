@@ -55,7 +55,8 @@ region_to_str_table = {
     24: 'Region_TheTenguAccords',
     25: 'Region_TheRiseOfTheWhiteMantle',
     26: 'Region_Swat',
-    27: 'Region_DevRegion',
+    27: 'Region_ReforgedReserved',
+    28: 'Region_DevRegion',
 }
 
 def region_type_to_str(region_type):
