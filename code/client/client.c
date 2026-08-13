@@ -78,12 +78,6 @@ struct area_info {
     Region region;
     RegionType region_type;
     uint32_t flags;
-    uint32_t x;
-    uint32_t y;
-    uint32_t start_x;
-    uint32_t start_y;
-    uint32_t end_x;
-    uint32_t end_y;
 };
 
 struct region_type_to_map_type {

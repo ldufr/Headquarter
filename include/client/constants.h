@@ -251,6 +251,7 @@ typedef enum Region {
     Region_TheTenguAccords,
     Region_TheRiseOfTheWhiteMantle,
     Region_Swat,
+    Region_ReforgedReserved,
     Region_DevRegion,
 } Region;
 

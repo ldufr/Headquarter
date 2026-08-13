@@ -81,8 +81,12 @@ def main(args):
     data = proc.read(table_addr, f'{size_in_bytes}s')[0]
     for i in range(table_size):
         campaign, continent, region, region_type, flags = struct.unpack_from('<IIIII', data, (i * ENTRY_SIZE))
-        region = region_to_str(region)
-        region_type = region_type_to_str(region_type)
+        try:
+            region = region_to_str(region)
+            region_type = region_type_to_str(region_type)
+        except:
+            print(f'failed at map {i}')
+            raise
         print(f'{{.campaign = {campaign}, .continent = {continent}, .region = {region}, .region_type = {region_type}, .flags = 0x{flags:08X}}},')
 
 if __name__ == '__main__':
